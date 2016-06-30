@@ -17,8 +17,9 @@ public:
     virtual void doChunk( fvec_t *inputSimple, cvec_t *inputComplex ) = 0;
     virtual DataType2D& getFeatures() = 0;
 
-    void filefinished()
+    virtual void filefinished( const std::string& input )
     {
+        (void)(input);
         samples.resize(colSize);
         colSize = 0;
     }

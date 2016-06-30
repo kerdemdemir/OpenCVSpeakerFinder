@@ -1,0 +1,149 @@
+#ifndef DEFINITIONS_H
+#define DEFINITIONS_H
+
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/ml/ml.hpp"
+#include <range/v3/all.hpp>
+#include <aubio.h>
+#include <sndfile.h>
+#include <string>
+#include <iostream>
+#include <fstream>
+#include <array>
+
+using namespace cv;
+using namespace cv::ml;
+
+#define JUMPSIZE 10
+#define STATE_COUNT ((450 - 80) / JUMPSIZE)
+#define LOAD 0
+#define NUMBER_OF_MFCC_FEATURES 22
+#define NUMBER_OF_MFCC_FILTERS 40
+#define NUMBER_OF_PEOPLE 6
+
+
+
+enum class Method
+{
+    PITCH = 0,
+    MFCC = 1,
+    PGRAMS = 2,
+    ALL_TRAINER = 3
+};
+
+
+inline
+const char* method2Str(Method tempMethod)
+{
+    if(tempMethod == Method::PITCH)
+        return "PITCH";
+    else if (tempMethod == Method::MFCC)
+        return "MFCC";
+    else if (tempMethod == Method::PGRAMS)
+        return "PGRAMS";
+    else
+        return "LEARNER";
+}
+
+struct Reader
+{
+
+    static constexpr size_t MAX_FILE_SIZE = 100000;
+    using ReaderIter = std::array< double , MAX_FILE_SIZE >::iterator;
+    using ReaderView = ranges::counted_view< ReaderIter, int >;
+
+    std::array<double, MAX_FILE_SIZE> rawData;
+    size_t fileSize;
+
+    ReaderView getView()
+    {
+        return ranges::counted_view< ReaderIter, int >( rawData.begin(), fileSize);
+    }
+
+
+    ReaderView
+    openWavFile(std::string fileName)
+    {
+        SF_INFO soundFileInfo;
+        SNDFILE* soundFile ;
+
+
+        soundFileInfo.format = 0;
+        soundFile = sf_open(fileName.c_str(), SFM_READ , &soundFileInfo);
+
+
+        if ( sf_error (soundFile)  != 0)
+        {
+            std::cout << "Problem with input wav file" << std::endl;
+            fileSize = 0;
+        }
+
+        fileSize = sf_read_double(soundFile, rawData.data(), MAX_FILE_SIZE);
+        if (fileSize <= 0)
+        {
+            std::cout << "Problem while reading the file" << std::endl;
+            fileSize = 0;
+        }
+
+        return getView();
+    }
+};
+
+class AubioMFCCWrapper
+{
+    cvec_t *inputComplex;
+    fvec_t *mfccout;
+    aubio_mfcc_t *mfcc;
+    size_t colSize;
+    Mat samples;
+    Reader reader;
+
+    uint_t hop_s = 256;
+    uint_t win_s = 1024;
+    uint_t sampleRate = 16000;
+
+    AubioMFCCWrapper()
+    {
+        inputComplex = new_cvec(hop_s*2);
+        mfccout = new_fvec (NUMBER_OF_MFCC_FEATURES); // output candidates
+        mfcc = new_aubio_mfcc (win_s, NUMBER_OF_MFCC_FILTERS, NUMBER_OF_MFCC_FEATURES, sampleRate);
+    }
+
+    ~AubioMFCCWrapper()
+    {
+        del_aubio_mfcc (mfcc);
+        del_cvec (inputComplex);
+        del_fvec (mfccout);
+        aubio_cleanup ();
+    }
+
+
+    void start ( std::string& input )
+    {
+        RANGES_FOR( auto chunk, reader.openWavFile(input) | ranges::view::chunk(256) )
+        {
+            doChunk(chunk);
+        }
+    }
+
+    void doChunk( Reader::ReaderView inputChunk  )
+    {
+        int pos = 0;
+        RANGES_FOR( auto elem , inputChunk )
+        {
+             inputComplex->norm[pos++] = elem;
+        }
+
+        std::fill(inputComplex->norm + pos, inputComplex->norm + hop_s, 0);
+        aubio_mfcc_do(mfcc, inputComplex, mfccout);
+
+        for (int i = 0; i < NUMBER_OF_MFCC_FEATURES; i++)
+        {
+            samples.push_back( mfccout->data[i] );
+        }
+    }
+
+}
+
+#endif // DEFINITIONS_H

@@ -6,9 +6,6 @@
 #include <aubio.h>
 
 constexpr int FORMANT_COUNT = 5;
-constexpr int MIN_FREQ = 80;
-constexpr int MAX_FREQ = 480;
-constexpr int JUMPSIZE = 8;
 constexpr int STATE_COUNT =  ((MAX_FREQ - MIN_FREQ) / JUMPSIZE);
 
 class F0Features : public FeatureExtractor
@@ -19,12 +16,7 @@ public:
     {
         selectedFormant = formant;
         char cStr[] = "default";
-
-        if ( selectedFormant != -1 )
-            samples = cv::Mat(  1, 1 , CV_64FC1 );
-        else
-            samples = cv::Mat(  1, FORMANT_COUNT , CV_64FC1 );
-
+        samples = cv::Mat(  1, 1 , CV_64FC1 );
         pitchOut = new_fvec (1); // output candidate
         pitch = new_aubio_pitch (cStr, win_s, hopSize, sampleRate);
     }
@@ -33,6 +25,19 @@ public:
     {
         del_aubio_pitch (pitch);
         del_fvec (pitchOut);
+    }
+
+    int findTheBestValley( cvec_t* inputComplex, int index )
+    {
+        auto tempIndexBack = index;
+        if ( inputComplex->norm[tempIndexBack-1] > inputComplex->norm[tempIndexBack])
+            tempIndexBack--;
+
+        auto tempIndexForward = index;
+        if ( inputComplex->norm[tempIndexForward+1] > inputComplex->norm[tempIndexForward])
+            tempIndexForward++;
+
+        return inputComplex->norm[tempIndexBack] > inputComplex->norm[tempIndexForward] ? tempIndexBack : tempIndexForward;
     }
 
     void getFormants( double f0, cvec_t* inputComplex )
@@ -47,6 +52,7 @@ public:
 
             int formant = curFreq / 1000;
             int formantIndex = curFreq / freqStep;
+            //formantIndex = findTheBestValley(inputComplex, formantIndex);
             float curFormantVal = inputComplex->norm[formantIndex];
             if ( formants[formant].second < curFormantVal )
             {
@@ -60,17 +66,7 @@ public:
            if ( selectedFormant == 0 )
             samples.at<double>(colSize, 0) = (formants[selectedFormant].first - MIN_FREQ) / JUMPSIZE;
            else
-            samples.at<double>(colSize, 0) = (formants[selectedFormant].first) / JUMPSIZE*2 ;// / (JUMPSIZE * 5);
-       }
-       else
-       {
-           for ( int i = 0; i < FORMANT_COUNT; i++)
-           {
-                if ( i ==  0)
-                    samples.at<double>(colSize, i) = (formants[i].first - MIN_FREQ) / JUMPSIZE ;
-                else
-                    samples.at<double>(colSize, i) = (formants[i].first - MIN_FREQ) / (JUMPSIZE * 2);
-           }
+            samples.at<double>(colSize, 0) = (formants[selectedFormant].first) / 25 ;// / (JUMPSIZE * 5);
        }
     }
 
@@ -87,6 +83,9 @@ public:
             return;
 
         getFormants( pitchOut->data[0], inputComplex);
+
+        //void aubio_pvoc_rdo(aubio_pvoc_t *pv, cvec_t * fftgrain, fvec_t *out);
+
         colSize++;
     }
 

@@ -108,12 +108,20 @@ public:
             int counter = 0;
             for (std::string line; std::getline(input, line); )
             {
-                auto strs = splitString(line);
-                strs[1].pop_back();
-                size_t key = std::stoi(strs[0]);
-                double value = std::stod(strs[1]);
-                ngramProbility[i].insert(std::make_pair(key, value));
-                counter++;
+                try
+                {
+                    auto strs = splitString(line);
+                    strs[1].pop_back();
+
+                    size_t key = std::stol(strs[0]);
+                    double value = std::stod(strs[1]);
+                    ngramProbility[i].insert(std::make_pair(key, value));
+                    counter++;
+                }
+                catch ( ... )
+                {
+                    continue;
+                }
             }
             input.close();
         }

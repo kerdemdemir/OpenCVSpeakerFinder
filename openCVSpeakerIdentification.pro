@@ -14,7 +14,7 @@ QMAKE_CXXFLAGS += -std=gnu++1y -pthread -lpthread
 
 LIB += -Wl,--stack,4194304
 
-LIBS += -L"$$_PRO_FILE_PWD_/libs/" -lsndfile-1 -lws2_32 -lqjpeg4 -laubio-4 -lfftw3-3 -pthread
+LIBS += -L"$$_PRO_FILE_PWD_/libs/" -lsndfile-1 -lws2_32 -lqjpeg4 -laubio-4 -lfftw3-3 -pthread -lLibPyin
 LIBS += -L"D:\cvOutNoIPP\bin" -lopencv_ml300  -lopencv_highgui300 -lopencv_features2d300 -lopencv_core300
 
 
@@ -34,6 +34,8 @@ HEADERS += \
     featureExtractor/MFCCFeatures.h \
     general.h \
     featureExtractor/f0features.h \
-    featureExtractor/f0highlevelfeatures.h
+    featureExtractor/f0highlevelfeatures.h \
+    featureExtractor/pyinf0feature.h \
+    featureExtractor/multif0features.h
 
 

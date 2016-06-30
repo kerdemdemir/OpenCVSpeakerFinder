@@ -117,7 +117,7 @@ public:
         }
 
         for ( auto extractor : extractors )
-            extractor->filefinished();
+            extractor->filefinished(input);
 
         return 0;
    }
@@ -130,6 +130,11 @@ public:
     void addExtractor( std::shared_ptr<FeatureExtractor> extractor )
     {
         extractors.push_back( extractor );
+    }
+
+    aubio_pvoc_t* getVocedor()
+    {
+        return phaseVocedor;
     }
 
 private:

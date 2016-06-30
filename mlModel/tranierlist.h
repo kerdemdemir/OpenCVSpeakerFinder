@@ -5,11 +5,13 @@
 #include "featureExtractor/featurelist.h"
 #include "featureExtractor/f0features.h"
 #include "featureExtractor/MFCCFeatures.h"
+#include "featureExtractor/multif0features.h"
 #include "featureExtractor/f0highlevelfeatures.h"
 #include "mlModel/gmmModel.h"
 #include "mlModel/pitchgrams.h"
 #include "mlModel/tranierlist.h"
 #include <QElapsedTimer>
+#include "featureExtractor/pyinf0feature.h"
 
 class TrainerComposer : public ModelBase
 {
@@ -111,19 +113,19 @@ public:
 
     void init()
     {
-        auto mfccFeaturePtr = std::make_shared<MFCCFeatures>();
-        auto gmmModel = std::make_shared<GMMModel>("MFCC");
-        featureList.addExtractor(mfccFeaturePtr);
-        gmmModel->setFeature( mfccFeaturePtr );
-        gmmModel->isLoad = false;
-        addModel(gmmModel);
+//        auto mfccFeaturePtr = std::make_shared<MFCCFeatures>();
+//        auto gmmModel = std::make_shared<GMMModel>("MFCC");
+//        featureList.addExtractor(mfccFeaturePtr);
+//        gmmModel->setFeature( mfccFeaturePtr );
+//        gmmModel->isLoad = true;
+//        addModel(gmmModel);
 
-        auto F0FeaturePtr = std::make_shared<F0Features>(-1);
-        auto gmmF0Model = std::make_shared<GMMModel>("Formant");
-        featureList.addExtractor(F0FeaturePtr);
-        gmmF0Model->setFeature( F0FeaturePtr );
-        gmmF0Model->isLoad = false;
-        addModel(gmmF0Model);
+//        auto F0FeaturePtr = std::make_shared<F0Features>(-1);
+//        auto gmmF0Model = std::make_shared<GMMModel>("Formant");
+//        featureList.addExtractor(F0FeaturePtr);
+//        gmmF0Model->setFeature( F0FeaturePtr );
+//        gmmF0Model->isLoad = true;
+//        addModel(gmmF0Model);
 
 //        auto highLevelFeaturePtr = std::make_shared<F0HighLevelFeatures>(2,2);
 //        auto gmmF0Model = std::make_shared<GMMModel>("HighLevelFormant");
@@ -133,7 +135,16 @@ public:
 //        addModel(gmmF0Model);
 
 
-        auto pitchGramRunnerModel = std::make_shared<PitchGramModel>(3, "F0");
+//        auto pitchGramRunnerModel = std::make_shared<PitchGramModel>(3, "F0");
+//        pitchGramRunnerModel->isLoad = true;
+//        pitchGramRunnerModel->setFeature( F0FeaturePtr );
+//        addModel(pitchGramRunnerModel);
+
+        //auto F0FeaturePtr = std::make_shared<PYINF0>(0);
+        auto F0FeaturePtr = std::make_shared<F0Features>(4);
+        //auto F0FeaturePtr = std::make_shared<MultiF0FeatureExtractor>(0, featureList.getVocedor());
+        featureList.addExtractor(F0FeaturePtr);
+        auto pitchGramRunnerModel = std::make_shared<PitchGramModel>(3, "F4");
         pitchGramRunnerModel->isLoad = false;
         pitchGramRunnerModel->setFeature( F0FeaturePtr );
         addModel(pitchGramRunnerModel);
